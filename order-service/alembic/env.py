@@ -4,6 +4,12 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from app.database import Base
 import app.models
+import sys
+import os
+
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 
 from alembic import context
 

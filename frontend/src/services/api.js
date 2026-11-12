@@ -1,11 +1,11 @@
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: 'http://localhost:8000', // Points to the Gateway
-  withCredentials: true,
+const API = axios.create({
+  baseURL: 'http://localhost:8000',
 });
 
-api.interceptors.request.use((config) => {
+// Automatically attach the JWT token to requests if available
+API.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -13,4 +13,4 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export default api;
+export default API;
