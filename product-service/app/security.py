@@ -1,15 +1,14 @@
+from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from app.permissions import Permission, user_has_permission
 
-# MUST match the SECRET_KEY used in the auth-service
-SECRET_KEY = "YOUR_SUPER_SECRET_KEY_CHANGE_IN_PRODUCTION"
+SECRET_KEY = "super-secret-ecommerce-key-change-in-production"
 ALGORITHM = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://localhost:8000/auth/login")
 
-def get_current_user_email(token: str = Depends(oauth2_scheme)) -> str:
-    """Decode the JWT locally and extract the user email (subject)."""
+def get_current_user_with_role(token: str = Depends(oauth2_scheme)) -> dict:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -18,8 +17,19 @@ def get_current_user_email(token: str = Depends(oauth2_scheme)) -> str:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
+        role: str = payload.get("role", "customer")
         if email is None:
             raise credentials_exception
-        return email
+        return {"email": email, "role": role}
     except JWTError:
         raise credentials_exception
+
+def require_permission(required_permission: Permission):
+    def permission_checker(current_user: dict = Depends(get_current_user_with_role)):
+        if not user_has_permission(current_user["role"], required_permission):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Missing required permission: '{required_permission.value}'"
+            )
+        return current_user
+    return permission_checker
